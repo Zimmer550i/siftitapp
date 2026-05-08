@@ -8,6 +8,7 @@ import 'package:sarkasm/views/base/custom_text_field.dart';
 import 'package:sarkasm/views/base/text_with_action.dart';
 import 'package:sarkasm/views/screens/auth/forget_password.dart';
 import 'package:sarkasm/views/screens/auth/signup.dart';
+import 'package:sarkasm/views/screens/scanning/scan.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -27,7 +28,9 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  void onSubmit() async {}
+  void onSubmit() async {
+    Get.offAll(() => Scan());
+  }
 
   @override
   Widget build(BuildContext context) {
