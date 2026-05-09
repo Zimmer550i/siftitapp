@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sarkasm/controllers/auth_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
 import 'package:sarkasm/views/base/custom_text_field.dart';
 import 'package:sarkasm/views/base/text_with_action.dart';
-import 'package:sarkasm/views/screens/auth/verification.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -30,7 +30,12 @@ class _SignupState extends State<Signup> {
   }
 
   void onSubmit() async {
-    Get.to(() => Verification(email: emailCtrl.text));
+    await Get.find<AuthController>().signUpWithEmail(
+      name: nameCtrl.text,
+      email: emailCtrl.text,
+      password: passCtrl.text,
+      confirmPassword: confirmPassCtrl.text,
+    );
   }
 
   @override
@@ -89,7 +94,15 @@ class _SignupState extends State<Signup> {
                 ],
               ),
               const SizedBox(height: 24),
-              CustomButton(onTap: onSubmit, text: "Register"),
+              GetBuilder<AuthController>(
+                builder: (authController) {
+                  return CustomButton(
+                    onTap: onSubmit,
+                    text: "Register",
+                    isLoading: authController.isLoading,
+                  );
+                },
+              ),
               const SizedBox(height: 16),
               TextWithAction(
                 text: "Already have an account?",

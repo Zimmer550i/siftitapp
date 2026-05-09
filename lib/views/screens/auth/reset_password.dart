@@ -27,7 +27,7 @@ class _ResetPasswordState extends State<ResetPassword> {
   }
 
   void onSubmit() async {
-    Get.offAll(() => Login());
+    Get.offAll(() => const Login());
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sarkasm/controllers/auth_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_svg.dart';
@@ -8,7 +9,6 @@ import 'package:sarkasm/views/base/custom_text_field.dart';
 import 'package:sarkasm/views/base/text_with_action.dart';
 import 'package:sarkasm/views/screens/auth/forget_password.dart';
 import 'package:sarkasm/views/screens/auth/signup.dart';
-import 'package:sarkasm/views/screens/scanning/scan.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -29,7 +29,10 @@ class _LoginState extends State<Login> {
   }
 
   void onSubmit() async {
-    Get.offAll(() => Scan());
+    await Get.find<AuthController>().loginWithEmail(
+      email: emailCtrl.text,
+      password: passCtrl.text,
+    );
   }
 
   @override
@@ -78,7 +81,15 @@ class _LoginState extends State<Login> {
                 ],
               ),
               const SizedBox(height: 24),
-              CustomButton(onTap: onSubmit, text: "Login"),
+              GetBuilder<AuthController>(
+                builder: (authController) {
+                  return CustomButton(
+                    onTap: onSubmit,
+                    text: "Login",
+                    isLoading: authController.isLoading,
+                  );
+                },
+              ),
               const SizedBox(height: 16),
               TextWithAction(
                 text: "Not a member?",
@@ -103,26 +114,32 @@ class _LoginState extends State<Login> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 spacing: 20,
                 children: [
-                  Container(
-                    height: 52,
-                    width: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xffFF616D),
-                    ),
-                    child: Center(
-                      child: CustomSvg(asset: "assets/icons/google.svg"),
+                  GestureDetector(
+                    onTap: () => Get.find<AuthController>().signInWithGoogle(),
+                    child: Container(
+                      height: 52,
+                      width: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xffFF616D),
+                      ),
+                      child: Center(
+                        child: CustomSvg(asset: "assets/icons/google.svg"),
+                      ),
                     ),
                   ),
-                  Container(
-                    height: 52,
-                    width: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black,
-                    ),
-                    child: Center(
-                      child: CustomSvg(asset: "assets/icons/apple.svg"),
+                  GestureDetector(
+                    onTap: () => Get.find<AuthController>().signInWithApple(),
+                    child: Container(
+                      height: 52,
+                      width: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black,
+                      ),
+                      child: Center(
+                        child: CustomSvg(asset: "assets/icons/apple.svg"),
+                      ),
                     ),
                   ),
                 ],

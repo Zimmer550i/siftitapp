@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sarkasm/controllers/auth_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_svg.dart';
 import 'package:sarkasm/views/base/custom_app_bar.dart';
 import 'package:sarkasm/views/base/overlay_confirmation.dart';
-import 'package:sarkasm/views/screens/auth/login.dart';
 import 'package:sarkasm/views/screens/profile/history.dart';
 import 'package:sarkasm/views/screens/profile/profile_information.dart';
 import 'package:sarkasm/views/screens/profile/subscription.dart';
@@ -53,7 +53,8 @@ class Profile extends StatelessWidget {
                     },
                     buttonTextRight: "Yes",
                     buttonCallBackRight: () {
-                      Get.offAll(() => Login());
+                      Get.back();
+                      Get.find<AuthController>().signOut();
                     },
                   ),
                 );

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sarkasm/controllers/auth_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_icons.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_svg.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
 import 'package:sarkasm/views/base/custom_text_field.dart';
-import 'package:sarkasm/views/screens/auth/verification.dart';
 
 class ForgetPassword extends StatefulWidget {
   final String email;
@@ -32,9 +32,7 @@ class _ForgetPasswordState extends State<ForgetPassword> {
   }
 
   void onSubmit() async {
-    Get.to(
-      () => Verification(email: emailCtrl.text, isResettingPassword: true),
-    );
+    await Get.find<AuthController>().sendPasswordResetEmail(emailCtrl.text);
   }
 
   @override
@@ -89,7 +87,15 @@ class _ForgetPasswordState extends State<ForgetPassword> {
                 hintText: "Enter your email",
               ),
               Spacer(),
-              CustomButton(onTap: onSubmit, text: "Send OTP"),
+              GetBuilder<AuthController>(
+                builder: (authController) {
+                  return CustomButton(
+                    onTap: onSubmit,
+                    text: "Send reset link",
+                    isLoading: authController.isLoading,
+                  );
+                },
+              ),
               const SizedBox(height: 20),
             ],
           ),

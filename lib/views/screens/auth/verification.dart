@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:pinput/pinput.dart';
+import 'package:sarkasm/controllers/auth_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_icons.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_svg.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
 import 'package:sarkasm/views/base/text_with_action.dart';
-import 'package:sarkasm/views/screens/auth/reset_password.dart';
 
 class Verification extends StatefulWidget {
   final String email;
@@ -25,8 +24,6 @@ class Verification extends StatefulWidget {
 }
 
 class _VerificationState extends State<Verification> {
-  final otpCtrl = TextEditingController();
-  final _focusNode = FocusNode();
   Timer? _resendTimer;
   int _resendSeconds = 10;
 
@@ -39,20 +36,12 @@ class _VerificationState extends State<Verification> {
   }
 
   void onSubmit() async {
-    if (widget.isResettingPassword) {
-      Get.to(() => ResetPassword());
-    } else {
-      Get.back();
-      Get.back();
-      Get.back();
-    }
+    await Get.find<AuthController>().checkEmailVerification();
   }
 
   @override
   void dispose() {
     _resendTimer?.cancel();
-    otpCtrl.dispose();
-    _focusNode.dispose();
     super.dispose();
   }
 
@@ -87,6 +76,7 @@ class _VerificationState extends State<Verification> {
 
   void _onResend() {
     if (!_canResend) return;
+    Get.find<AuthController>().sendEmailVerification();
     _startResendTimer();
   }
 
@@ -123,7 +113,7 @@ class _VerificationState extends State<Verification> {
               Align(
                 alignment: Alignment.center,
                 child: Text(
-                  "Enter confirmation code",
+                  "Verify your email",
                   style: AppTexts.tlgs.copyWith(color: AppColors.zinc.shade900),
                 ),
               ),
@@ -131,60 +121,20 @@ class _VerificationState extends State<Verification> {
               Align(
                 alignment: Alignment.center,
                 child: Text(
-                  "A 4-digit code was sent to\n${widget.email}",
+                  "A verification link was sent to\n${widget.email}",
                   textAlign: TextAlign.center,
                   style: AppTexts.tsmr.copyWith(color: AppColors.zinc),
                 ),
               ),
               const SizedBox(height: 48),
-              Pinput(
-                controller: otpCtrl,
-                focusNode: _focusNode,
-                onTapOutside: (event) {
-                  _focusNode.unfocus();
-                },
-                separatorBuilder: (index) {
-                  return const SizedBox(width: 8);
-                },
-                defaultPinTheme: PinTheme(
-                  height: 48,
-                  width: 48,
-                  textStyle: AppTexts.tmdr.copyWith(
-                    color: AppColors.zinc.shade900,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: AppColors.zinc.shade200),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                focusedPinTheme: PinTheme(
-                  height: 48,
-                  width: 48,
-                  textStyle: AppTexts.tmdr.copyWith(
-                    color: AppColors.zinc.shade900,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: AppColors.teal),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                followingPinTheme: PinTheme(
-                  height: 48,
-                  width: 48,
-                  textStyle: AppTexts.tmdr.copyWith(
-                    color: AppColors.zinc.shade900,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.zinc.shade200),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+              Text(
+                "Open the link from your inbox, then return here to continue.",
+                textAlign: TextAlign.center,
+                style: AppTexts.tsmr.copyWith(color: AppColors.zinc),
               ),
               const SizedBox(height: 24),
               TextWithAction(
-                text: "Haven’t received code yet?",
+                text: "Haven’t received the email yet?",
                 actionText: _canResend ? "Resend" : "Resend in $_resendSeconds",
                 actionColor: _canResend
                     ? AppColors.teal
@@ -193,7 +143,15 @@ class _VerificationState extends State<Verification> {
               ),
               const SizedBox(height: 16),
               Spacer(),
-              CustomButton(onTap: onSubmit, text: "Verify"),
+              GetBuilder<AuthController>(
+                builder: (authController) {
+                  return CustomButton(
+                    onTap: onSubmit,
+                    text: "I've Verified",
+                    isLoading: authController.isLoading,
+                  );
+                },
+              ),
               const SizedBox(height: 20),
             ],
           ),

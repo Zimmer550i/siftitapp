@@ -1,0 +1,302 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sarkasm/utils/custom_snackbar.dart';
+import 'package:sarkasm/views/screens/auth/login.dart';
+import 'package:sarkasm/views/screens/auth/verification.dart';
+import 'package:sarkasm/views/screens/scanning/scan.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+class AuthController extends GetxController {
+  final FirebaseAuth _auth;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  Future<void>? _googleInit;
+
+  AuthController({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+
+  String loadingType = "";
+  bool isLoading = false;
+  bool isSendingVerification = false;
+  User? get currentUser => _auth.currentUser;
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  @override
+  void onInit() {
+    super.onInit();
+    _googleInit = _googleSignIn.initialize();
+  }
+
+  Future<void> _ensureGoogleSignInReady() async {
+    _googleInit ??= _googleSignIn.initialize();
+    await _googleInit;
+  }
+
+  Future<void> signUpWithEmail({
+    required String name,
+    required String email,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    if (!_validateNameEmailPassword(name, email, password)) return;
+    if (password != confirmPassword) {
+      customSnackBar('Passwords do not match');
+      return;
+    }
+
+    await _runAuthAction(() async {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      await credential.user?.updateDisplayName(name.trim());
+      await credential.user?.sendEmailVerification();
+      customSnackBar(
+        'Verification link sent. Please check your email.',
+        isError: false,
+      );
+      Get.to(() => Verification(email: email.trim()));
+    });
+  }
+
+  Future<void> loginWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    if (!_validateEmailPassword(email, password)) return;
+
+    await _runAuthAction(() async {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) return;
+
+      await user.reload();
+      if (!(_auth.currentUser?.emailVerified ?? false)) {
+        await sendEmailVerification(showSuccess: false);
+        customSnackBar(
+          'Please verify your email. We sent a new verification link.',
+          isError: false,
+        );
+        Get.to(() => Verification(email: email.trim()));
+        return;
+      }
+
+      _openApp();
+    });
+  }
+
+  Future<void> signInWithGoogle() async {
+    await _runAuthAction(() async {
+      await _ensureGoogleSignInReady();
+      if (!_googleSignIn.supportsAuthenticate()) {
+        customSnackBar('Google sign-in is not supported on this platform.');
+        return;
+      }
+
+      final googleUser = await _googleSignIn.authenticate();
+      final googleAuth = googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        customSnackBar('Google sign-in did not return an ID token.');
+        return;
+      }
+
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      await _auth.signInWithCredential(credential);
+      _openApp();
+    });
+  }
+
+  Future<void> signInWithApple() async {
+    await _runAuthAction(() async {
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final idToken = appleCredential.identityToken;
+      if (idToken == null) {
+        customSnackBar('Apple sign-in did not return an identity token.');
+        return;
+      }
+
+      final oauthCredential = OAuthProvider(
+        'apple.com',
+      ).credential(idToken: idToken, rawNonce: rawNonce);
+
+      final credential = await _auth.signInWithCredential(oauthCredential);
+      final displayName = [
+        appleCredential.givenName,
+        appleCredential.familyName,
+      ].whereType<String>().where((part) => part.trim().isNotEmpty).join(' ');
+
+      if (displayName.isNotEmpty &&
+          (credential.user?.displayName?.isEmpty ?? true)) {
+        await credential.user?.updateDisplayName(displayName);
+      }
+
+      _openApp();
+    });
+  }
+
+  Future<void> sendEmailVerification({bool showSuccess = true}) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      customSnackBar('No signed-in user found.');
+      return;
+    }
+
+    isSendingVerification = true;
+    update();
+    try {
+      await user.sendEmailVerification();
+      if (showSuccess) {
+        customSnackBar('Verification email sent.', isError: false);
+      }
+    } on FirebaseAuthException catch (error) {
+      customSnackBar(_messageForAuthException(error));
+    } finally {
+      isSendingVerification = false;
+      update();
+    }
+  }
+
+  Future<void> checkEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      customSnackBar('Please log in again to check verification.');
+      Get.offAll(() => const Login());
+      return;
+    }
+
+    await _runAuthAction(() async {
+      await user.reload();
+      if (_auth.currentUser?.emailVerified ?? false) {
+        _openApp();
+      } else {
+        customSnackBar('Email is not verified yet.');
+      }
+    });
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    if (email.trim().isEmpty || !GetUtils.isEmail(email.trim())) {
+      customSnackBar('Please enter a valid email address.');
+      return;
+    }
+
+    await _runAuthAction(() async {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      customSnackBar(
+        'Password reset link sent. Please check your inbox.',
+        isError: false,
+      );
+      Get.offAll(() => const Login());
+    });
+  }
+
+  Future<void> signOut() async {
+    await _auth.signOut();
+    await _googleSignIn.signOut();
+    Get.offAll(() => const Login());
+  }
+
+  bool _validateNameEmailPassword(String name, String email, String password) {
+    if (name.trim().isEmpty) {
+      customSnackBar('Please enter your name.');
+      return false;
+    }
+    return _validateEmailPassword(email, password);
+  }
+
+  bool _validateEmailPassword(String email, String password) {
+    if (email.trim().isEmpty || !GetUtils.isEmail(email.trim())) {
+      customSnackBar('Please enter a valid email address.');
+      return false;
+    }
+    if (password.length < 6) {
+      customSnackBar('Password must be at least 6 characters.');
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _runAuthAction(Future<void> Function() action) async {
+    isLoading = true;
+    update();
+    try {
+      await action();
+    } on FirebaseAuthException catch (error) {
+      customSnackBar(_messageForAuthException(error));
+    } on SignInWithAppleAuthorizationException catch (error) {
+      if (error.code != AuthorizationErrorCode.canceled) {
+        customSnackBar('Apple sign-in failed. Please try again.');
+      }
+    } on GoogleSignInException catch (error) {
+      if (error.code != GoogleSignInExceptionCode.canceled) {
+        customSnackBar(error.description ?? 'Google sign-in failed.');
+      }
+    } catch (e) {
+      customSnackBar('Something went wrong. Please try again.');
+    } finally {
+      isLoading = false;
+      update();
+    }
+  }
+
+  void _openApp() {
+    Get.offAll(() => const Scan());
+  }
+
+  String _messageForAuthException(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'user-not-found':
+        return 'No account found for this email.';
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Incorrect email or password.';
+      case 'email-already-in-use':
+        return 'An account already exists for this email.';
+      case 'weak-password':
+        return 'Please choose a stronger password.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection.';
+      default:
+        return error.message ?? 'Authentication failed. Please try again.';
+    }
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+}
