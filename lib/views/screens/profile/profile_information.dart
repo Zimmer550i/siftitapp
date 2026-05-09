@@ -33,6 +33,11 @@ class _ProfileInformationState extends State<ProfileInformation> {
                 image: "https://thispersondoesnotexist.com",
                 imageFile: profilePic,
                 isEditable: isEditing,
+                imagePickerCallback: (p0) {
+                  setState(() {
+                    profilePic = p0;
+                  });
+                },
               ),
               const SizedBox(height: 16),
               CustomTextField(title: "Name", hintText: "Enter your name"),

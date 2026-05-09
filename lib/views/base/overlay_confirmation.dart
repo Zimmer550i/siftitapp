@@ -49,7 +49,8 @@ class OverlayConfirmation extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.teal,
                 fontSize: 20,
-                fontVariations: [FontVariation("wght", 600)],
+                fontWeight: FontWeight.w600
+                // fontVariations: [FontVariation("wght", 600)],
               ),
             ),
           const SizedBox(height: 20),
@@ -60,6 +61,7 @@ class OverlayConfirmation extends StatelessWidget {
                 Expanded(
                   child: CustomButton(
                     text: buttonTextLeft!,
+                    height: 40,
                     isSecondary: leftButtonIsSecondary,
                     onTap: buttonCallBackLeft,
                   ),
@@ -68,6 +70,7 @@ class OverlayConfirmation extends StatelessWidget {
                 Expanded(
                   child: CustomButton(
                     text: buttonTextRight!,
+                    height: 40,
                     isSecondary: !leftButtonIsSecondary,
                     onTap: buttonCallBackRight,
                   ),

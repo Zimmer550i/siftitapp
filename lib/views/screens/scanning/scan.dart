@@ -109,6 +109,7 @@ class _ScanState extends State<Scan> {
               ),
               CustomListHandler(
                 shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
                 seperator: Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Container(

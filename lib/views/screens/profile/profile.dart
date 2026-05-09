@@ -4,6 +4,8 @@ import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_svg.dart';
 import 'package:sarkasm/views/base/custom_app_bar.dart';
+import 'package:sarkasm/views/base/overlay_confirmation.dart';
+import 'package:sarkasm/views/screens/auth/login.dart';
 import 'package:sarkasm/views/screens/profile/history.dart';
 import 'package:sarkasm/views/screens/profile/profile_information.dart';
 import 'package:sarkasm/views/screens/profile/subscription.dart';
@@ -39,7 +41,23 @@ class Profile extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             GestureDetector(
-              onTap: () {},
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => OverlayConfirmation(
+                    title: "Are your sure you want to",
+                    highlight: "Logout?",
+                    buttonTextLeft: "No",
+                    buttonCallBackLeft: () {
+                      Get.back();
+                    },
+                    buttonTextRight: "Yes",
+                    buttonCallBackRight: () {
+                      Get.offAll(() => Login());
+                    },
+                  ),
+                );
+              },
               child: Row(
                 spacing: 8,
                 children: [

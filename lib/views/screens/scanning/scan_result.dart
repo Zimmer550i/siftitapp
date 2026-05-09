@@ -97,6 +97,7 @@ class ScanResult extends StatelessWidget {
                 topPadding: true,
                 endIndicator: "",
                 horizontalPadding: 0,
+                physics: NeverScrollableScrollPhysics(),
                 seperator: Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Container(
