@@ -8,9 +8,7 @@ import 'package:sarkasm/views/base/custom_button.dart';
 class CameraPermission extends StatelessWidget {
   CameraPermission({super.key});
 
-  final ScanController cameraController = Get.put(
-    ScanController(),
-  );
+  final ScanController cameraController = Get.find<ScanController>();
 
   @override
   Widget build(BuildContext context) {

@@ -9,8 +9,8 @@ class Splash extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(Duration(milliseconds: 100), () {
-        Get.off(() => Onboarding());
+      Future.delayed(Duration(milliseconds: 1000), () {
+        Get.off(() => Onboarding(), transition: Transition.fadeIn);
       });
     });
     return Scaffold(

@@ -13,20 +13,12 @@ class ScanController extends GetxController {
   }
 
   Future<void> prepareCamera() async {
-    isLoading = true;
-    cameraError = null;
-    update();
+    _setLoading();
 
-    final hasPermission = await hasAccess();
-
-    if (!hasPermission) {
-      final granted = await Get.to<bool>(() => CameraPermission());
-      if (granted != true) {
-        cameraError = "Camera access is required";
-        isLoading = false;
-        update();
-        return;
-      }
+    final canUseCamera = await _ensureCameraPermission();
+    if (!canUseCamera) {
+      _setError("Camera access is required");
+      return;
     }
 
     await initializeCamera();
@@ -37,21 +29,13 @@ class ScanController extends GetxController {
       final cameras = await camera.availableCameras();
 
       if (cameras.isEmpty) {
-        cameraError = "No camera found";
-        isLoading = false;
-        update();
+        _setError("No camera found");
         return;
       }
 
-      final cameraDescription = cameras.firstWhere(
-        (description) =>
-            description.lensDirection == camera.CameraLensDirection.back,
-        orElse: () => cameras.first,
-      );
-
       await cameraController?.dispose();
       cameraController = camera.CameraController(
-        cameraDescription,
+        _preferredCamera(cameras),
         camera.ResolutionPreset.medium,
         enableAudio: false,
       );
@@ -61,8 +45,7 @@ class ScanController extends GetxController {
       cameraError = "Unable to open camera";
     }
 
-    isLoading = false;
-    update();
+    _setIdle();
   }
 
   Future<void> getAccess() async {
@@ -83,6 +66,42 @@ class ScanController extends GetxController {
       "Please allow camera access to scan barcodes and ingredient labels.",
       snackPosition: SnackPosition.BOTTOM,
     );
+  }
+
+  Future<bool> _ensureCameraPermission() async {
+    if (await hasAccess()) {
+      return true;
+    }
+
+    final granted = await Get.to<bool>(() => CameraPermission());
+    return granted == true;
+  }
+
+  camera.CameraDescription _preferredCamera(
+    List<camera.CameraDescription> cameras,
+  ) {
+    return cameras.firstWhere(
+      (description) =>
+          description.lensDirection == camera.CameraLensDirection.back,
+      orElse: () => cameras.first,
+    );
+  }
+
+  void _setLoading() {
+    isLoading = true;
+    cameraError = null;
+    update();
+  }
+
+  void _setIdle() {
+    isLoading = false;
+    update();
+  }
+
+  void _setError(String message) {
+    cameraError = message;
+    isLoading = false;
+    update();
   }
 
   @override

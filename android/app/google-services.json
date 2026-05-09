@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "23936174811",
+    "project_id": "sarkasm-siftitapp",
+    "storage_bucket": "sarkasm-siftitapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:23936174811:android:4359d0d8906f805d045afe",
+        "android_client_info": {
+          "package_name": "com.sarkasm.siftitapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBV6I0a6uPbX2hh_ixt7qzsOP7wNxnVkls"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
