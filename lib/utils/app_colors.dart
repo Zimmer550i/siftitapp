@@ -4,6 +4,9 @@ class AppColors {
   // Base
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
+  static const Color bad = Color(0xFFD94040);
+  static const Color mid = Color(0xFFE07B30);
+  static const Color good = Color(0xFF0A8C5A);
 
   // Teal
   static const MaterialColor teal = MaterialColor(0xFF016B57, {
@@ -49,4 +52,19 @@ class AppColors {
     800: Color(0xFF18181b),
     900: Color(0xFF09090b),
   });
+}
+
+Color spectrumColor(
+  double value, {
+  Color red = AppColors.bad,
+  Color yellow = AppColors.mid,
+  Color green = AppColors.good,
+}) {
+  final clamped = value.clamp(0.0, 1.0).toDouble();
+
+  if (clamped <= 0.5) {
+    return Color.lerp(red, yellow, clamped * 2)!;
+  }
+
+  return Color.lerp(yellow, green, (clamped - 0.5) * 2)!;
 }

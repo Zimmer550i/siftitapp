@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sarkasm/views/screens/scanning/camera_permission.dart';
 
-class CustomCameraController extends GetxController {
+class ScanController extends GetxController {
   camera.CameraController? cameraController;
   bool isLoading = false;
   String? cameraError;

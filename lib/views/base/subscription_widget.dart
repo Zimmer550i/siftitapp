@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SubscriptionWidget extends StatelessWidget {
-  final String icon;
   final String title;
-  final String subTitle;
+  final double price;
+  final String duration;
   final List<String> pros;
   final List<String> cons;
   final bool isPurchased;
@@ -16,136 +16,91 @@ class SubscriptionWidget extends StatelessWidget {
   final Function()? onTap;
   const SubscriptionWidget({
     super.key,
-    required this.icon,
     required this.title,
-    required this.subTitle,
     this.pros = const [],
     this.cons = const [],
     this.isPurchased = false,
     this.isPremium = false,
     this.onTap,
+    required this.price,
+    required this.duration,
   });
-
-  SubscriptionWidget copyWith({
-    String? icon,
-    String? title,
-    String? subTitle,
-    List<String>? pros,
-    List<String>? cons,
-    bool? isPurchased,
-    Function()? onTap,
-  }) {
-    return SubscriptionWidget(
-      icon: icon ?? this.icon,
-      title: title ?? this.title,
-      subTitle: subTitle ?? this.subTitle,
-      pros: pros ?? this.pros,
-      cons: cons ?? this.cons,
-      isPurchased: isPurchased ?? this.isPurchased,
-      onTap: onTap ?? this.onTap,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
-        color: AppColors.teal.shade400,
-        borderRadius: BorderRadius.circular(16),
-        border: isPurchased ? Border.all(color: AppColors.teal) : null,
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isPurchased ? AppColors.teal : AppColors.zinc.shade300,
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: EdgeInsets.only(left: 35, right: 35, top: 24, bottom: 20),
-            child: Row(
-              spacing: 16,
-              children: [
-                Container(
-                  height: 50,
-                  width: 50,
-                  decoration: BoxDecoration(
-                    color: AppColors.teal,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(child: SvgPicture.asset(icon)),
+          Text(
+            title,
+            style: AppTexts.tlgs.copyWith(
+              color: isPurchased ? AppColors.teal : AppColors.zinc.shade900,
+            ),
+          ),
+          Row(
+            spacing: 8,
+            children: [
+              Text(
+                "\$${price.toString()}",
+                style: AppTexts.dxsb.copyWith(
+                  color: isPurchased ? AppColors.zinc.shade900 : AppColors.teal,
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              Text(
+                "/$duration",
+                style: AppTexts.tmdm.copyWith(color: AppColors.zinc),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 10,
+            children: [
+              ...pros.map((e) {
+                return Row(
+                  spacing: 8,
                   children: [
+                    SvgPicture.asset("assets/icons/tick.svg"),
                     Text(
-                      title,
-                      style: AppTexts.tlgm.copyWith(
-                        color: isPremium
-                            ? AppColors.teal[50]
-                            : AppColors.teal.shade200,
-                      ),
-                    ),
-                    Text(
-                      subTitle,
-                      style: AppTexts.tlgm.copyWith(
-                        color: isPremium ? AppColors.teal : AppColors.teal[50],
+                      e,
+                      style: AppTexts.tmdr.copyWith(
+                        color: AppColors.zinc.shade900,
                       ),
                     ),
                   ],
-                ),
-              ],
-            ),
+                );
+              }),
+              ...cons.map((e) {
+                return Row(
+                  spacing: 8,
+                  children: [
+                    SvgPicture.asset(AppIcons.closeCircle),
+                    Text(
+                      e,
+                      style: AppTexts.tmdm.copyWith(color: AppColors.teal[100]),
+                    ),
+                  ],
+                );
+              }),
+            ],
           ),
-          Container(height: 0.5, width: double.infinity, color: AppColors.teal),
-          const SizedBox(height: 20),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 35),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 12,
-              children: [
-                Text(
-                  "Features",
-                  style: AppTexts.tmdm.copyWith(color: AppColors.teal[50]),
-                ),
-                ...pros.map((e) {
-                  return Row(
-                    spacing: 8,
-                    children: [
-                      SvgPicture.asset(AppIcons.tickCircle),
-                      Text(
-                        e,
-                        style: AppTexts.tmdm.copyWith(
-                          color: AppColors.teal[100],
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-                ...cons.map((e) {
-                  return Row(
-                    spacing: 8,
-                    children: [
-                      SvgPicture.asset(AppIcons.closeCircle),
-                      Text(
-                        e,
-                        style: AppTexts.tmdm.copyWith(
-                          color: AppColors.teal[100],
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ],
-            ),
+          const SizedBox(height: 32),
+          CustomButton(
+            text: isPurchased ? "Current Plan" : "Choose Plan",
+            leading: isPurchased ? "assets/icons/tick.svg" : null,
+            isSecondary: isPurchased,
+            onTap: onTap,
           ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: CustomButton(
-              text: isPurchased ? "Current Plan" : "Choose Plan",
-              leading: isPurchased ? AppIcons.tickCircle : null,
-              isSecondary: isPurchased,
-              onTap: isPurchased ? null : onTap,
-            ),
-          ),
-          const SizedBox(height: 20),
         ],
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:sarkasm/controllers/custom_camera_controller.dart';
+import 'package:sarkasm/controllers/scan_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
@@ -8,8 +8,8 @@ import 'package:sarkasm/views/base/custom_button.dart';
 class CameraPermission extends StatelessWidget {
   CameraPermission({super.key});
 
-  final CustomCameraController cameraController = Get.put(
-    CustomCameraController(),
+  final ScanController cameraController = Get.put(
+    ScanController(),
   );
 
   @override

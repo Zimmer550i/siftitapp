@@ -101,20 +101,10 @@ class ProfilePicture extends StatelessWidget {
           ),
           if (isEditable)
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: -12,
+              right: 3,
+              bottom: 3,
               child: Center(
-                child: Container(
-                  height: 32,
-                  width: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.teal,
-                    shape: BoxShape.circle,
-                  ),
-                  padding: EdgeInsets.all(8),
-                  child: CustomSvg(asset: AppIcons.edit, size: 16),
-                ),
+                child: CustomSvg(asset: AppIcons.edit, size: 32),
               ),
             ),
         ],
