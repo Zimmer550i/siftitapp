@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:math';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sarkasm/models/user_model.dart';
 import 'package:sarkasm/utils/custom_snackbar.dart';
 import 'package:sarkasm/views/screens/auth/login.dart';
 import 'package:sarkasm/views/screens/auth/verification.dart';
@@ -13,10 +14,13 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthController extends GetxController {
   final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   Future<void>? _googleInit;
 
-  AuthController({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  AuthController({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   String loadingType = "";
   bool isLoading = false;
@@ -53,6 +57,16 @@ class AuthController extends GetxController {
         password: password,
       );
       await credential.user?.updateDisplayName(name.trim());
+
+      // Save user to Firestore
+      if (credential.user != null) {
+        await _saveUserToFirestore(
+          uid: credential.user!.uid,
+          name: name.trim(),
+          email: email.trim(),
+        );
+      }
+
       await credential.user?.sendEmailVerification();
       customSnackBar(
         'Verification link sent. Please check your email.',
@@ -108,7 +122,17 @@ class AuthController extends GetxController {
       }
 
       final credential = GoogleAuthProvider.credential(idToken: idToken);
-      await _auth.signInWithCredential(credential);
+      final result = await _auth.signInWithCredential(credential);
+
+      // Save user to Firestore
+      if (result.user != null) {
+        await _saveUserToFirestore(
+          uid: result.user!.uid,
+          name: result.user!.displayName ?? 'User',
+          email: result.user!.email ?? '',
+        );
+      }
+
       _openApp();
     });
   }
@@ -145,6 +169,15 @@ class AuthController extends GetxController {
       if (displayName.isNotEmpty &&
           (credential.user?.displayName?.isEmpty ?? true)) {
         await credential.user?.updateDisplayName(displayName);
+      }
+
+      // Save user to Firestore
+      if (credential.user != null) {
+        await _saveUserToFirestore(
+          uid: credential.user!.uid,
+          name: credential.user!.displayName ?? 'User',
+          email: credential.user!.email ?? '',
+        );
       }
 
       _openApp();
@@ -298,5 +331,28 @@ class AuthController extends GetxController {
     final bytes = utf8.encode(input);
     final digest = sha256.convert(bytes);
     return digest.toString();
+  }
+
+  Future<void> _saveUserToFirestore({
+    required String uid,
+    required String name,
+    required String email,
+  }) async {
+    try {
+      final userModel = UserModel(
+        uid: uid,
+        name: name,
+        email: email,
+        createdAt: DateTime.now(),
+      );
+
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .set(userModel.toJson(), SetOptions(merge: true));
+    } catch (e) {
+      print('Error saving user to Firestore: $e');
+      // Don't show error to user as auth was successful
+    }
   }
 }

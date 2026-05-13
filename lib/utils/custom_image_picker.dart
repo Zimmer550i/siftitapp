@@ -4,7 +4,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 
-Future<File?> customImagePicker({isCircular = true, isSquared = true}) async {
+Future<File?> customImagePicker({bool isCircular = true, isSquared = true}) async {
   final picker = ImagePicker();
   final cropper = ImageCropper();
 

@@ -94,7 +94,7 @@ class PullToRefreshState extends State<PullToRefresh> {
     );
   }
 
-  void end(details) {
+  void end(dynamic details) {
     setState(() {
       if (size > thresholdMin && !isRefreshing) {
         _refresh();
@@ -103,7 +103,7 @@ class PullToRefreshState extends State<PullToRefresh> {
     });
   }
 
-  void update(details) {
+  void update(dynamic details) {
     setState(() {
       final temp = details.localPosition.dy - beginY;
       if (temp > 0 && !isRefreshing) {
@@ -114,7 +114,7 @@ class PullToRefreshState extends State<PullToRefresh> {
     });
   }
 
-  void start(details) {
+  void start(dynamic details) {
     setState(() {
       beginY = details.localPosition.dy;
     });

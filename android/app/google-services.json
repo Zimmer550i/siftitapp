@@ -12,7 +12,20 @@
           "package_name": "com.sarkasm.siftitapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "23936174811-f9hiagtv35rium5j7poimv2fkknj073b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sarkasm.siftitapp",
+            "certificate_hash": "5cd3d309c1e6ca10351ab9dd48ee804a23ca3980"
+          }
+        },
+        {
+          "client_id": "23936174811-rlna8ft8mrb7dqvjbnaqc97d0fqqvt5h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBV6I0a6uPbX2hh_ixt7qzsOP7wNxnVkls"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "23936174811-rlna8ft8mrb7dqvjbnaqc97d0fqqvt5h.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "23936174811-g0e116iesc7qqtv73ib0nfvlk7lr5rpj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sarkasm.siftitapp"
+              }
+            }
+          ]
         }
       }
     }
