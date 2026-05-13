@@ -10,7 +10,8 @@ import 'package:sarkasm/models/user_model.dart';
 import 'package:sarkasm/utils/custom_snackbar.dart';
 import 'package:sarkasm/views/screens/auth/login.dart';
 import 'package:sarkasm/views/screens/auth/verification.dart';
-import 'package:sarkasm/views/screens/scanning/scan.dart';
+import 'package:sarkasm/views/screens/onboarding/onboarding.dart';
+import 'package:sarkasm/views/screens/scanning/camera_permission.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthController extends GetxController {
@@ -28,11 +29,34 @@ class AuthController extends GetxController {
   bool isSendingVerification = false;
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+  bool get isUserLoggedIn => _auth.currentUser != null;
+  bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
 
   @override
   void onInit() {
     super.onInit();
     _googleInit = _googleSignIn.initialize();
+  }
+
+  Future<void> checkAuthStatus() async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      Get.offAll(() => const Onboarding());
+      return;
+    }
+
+    // If user exists but email is not verified
+    if (!user.emailVerified) {
+      await user.reload();
+      if (!(_auth.currentUser?.emailVerified ?? false)) {
+        Get.offAll(() => Verification(email: user.email ?? ''));
+        return;
+      }
+    }
+
+    // User is authenticated and verified
+    _openApp();
   }
 
   Future<void> _ensureGoogleSignInReady() async {
@@ -273,6 +297,9 @@ class AuthController extends GetxController {
     try {
       await action();
     } on FirebaseAuthException catch (error) {
+      debugPrint(
+        'FirebaseAuthException: code=${error.code}, message=${error.message}',
+      );
       customSnackBar(_messageForAuthException(error));
     } on SignInWithAppleAuthorizationException catch (error) {
       if (error.code != AuthorizationErrorCode.canceled) {
@@ -291,7 +318,7 @@ class AuthController extends GetxController {
   }
 
   void _openApp() {
-    Get.offAll(() => const Scan());
+    Get.offAll(() => CameraPermission());
   }
 
   String _messageForAuthException(FirebaseAuthException error) {
@@ -304,7 +331,7 @@ class AuthController extends GetxController {
         return 'No account found for this email.';
       case 'wrong-password':
       case 'invalid-credential':
-        return 'Incorrect email or password.';
+        return 'Invalid sign-in credential. Please try again.';
       case 'email-already-in-use':
         return 'An account already exists for this email.';
       case 'weak-password':
@@ -313,6 +340,10 @@ class AuthController extends GetxController {
         return 'Too many attempts. Please try again later.';
       case 'network-request-failed':
         return 'Network error. Please check your connection.';
+      case 'invalid-oauth-provider':
+        return 'Invalid Apple sign-in provider configuration.';
+      case 'invalid-oauth-client-id':
+        return 'Invalid Apple OAuth client ID configuration.';
       default:
         return error.message ?? 'Authentication failed. Please try again.';
     }

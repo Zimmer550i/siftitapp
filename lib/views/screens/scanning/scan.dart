@@ -11,6 +11,7 @@ import 'package:sarkasm/utils/custom_svg.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
 import 'package:sarkasm/views/base/profile_picture.dart';
 import 'package:sarkasm/views/screens/profile/profile.dart';
+import 'package:sarkasm/views/screens/scanning/camera_permission.dart';
 import 'package:sarkasm/views/screens/scanning/scan_result.dart';
 
 class Scan extends StatefulWidget {
@@ -23,11 +24,13 @@ class Scan extends StatefulWidget {
 class _ScanState extends State<Scan> {
   final scanCtrl = Get.find<ScanController>();
   late MobileScannerController mobileScannerController;
+  bool hasAccess = false;
   bool _canVibrate = true;
 
   @override
   void initState() {
     super.initState();
+    checkAccess();
     mobileScannerController = MobileScannerController();
   }
 
@@ -37,8 +40,17 @@ class _ScanState extends State<Scan> {
     super.dispose();
   }
 
+  void checkAccess() async {
+    hasAccess = await scanCtrl.hasAccess();
+
+    if (!hasAccess) {
+      Get.to(() => CameraPermission());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    checkAccess();
     return Scaffold(
       body: SingleChildScrollView(
         child: SafeArea(
@@ -68,27 +80,27 @@ class _ScanState extends State<Scan> {
                 children: [
                   SizedBox(
                     height: 300,
-                  child: MobileScanner(
-                    controller: mobileScannerController,
-                    onDetect: (capture) {
-                      if (_canVibrate) {
-                        HapticFeedback.mediumImpact();
-                        _canVibrate = false;
+                    child: MobileScanner(
+                      controller: mobileScannerController,
+                      onDetect: (capture) {
+                        if (_canVibrate) {
+                          HapticFeedback.mediumImpact();
+                          _canVibrate = false;
 
-                        Future.delayed(const Duration(seconds: 2), () {
-                          if (mounted) {
-                            _canVibrate = true;
-                          }
-                        });
-                      }
+                          Future.delayed(const Duration(seconds: 2), () {
+                            if (mounted) {
+                              _canVibrate = true;
+                            }
+                          });
+                        }
 
-                      customSnackBar(
-                        capture.barcodes.first.rawValue ??
-                            "Error detecting code",
-                      );
-                      debugPrint(capture.barcodes.first.rawValue);
-                    },
-                  ),
+                        customSnackBar(
+                          capture.barcodes.first.rawValue ??
+                              "Error detecting code",
+                        );
+                        debugPrint(capture.barcodes.first.rawValue);
+                      },
+                    ),
                   ),
                   Positioned(
                     top: 24,
