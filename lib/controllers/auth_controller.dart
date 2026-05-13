@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sarkasm/models/user_model.dart';
@@ -351,7 +352,7 @@ class AuthController extends GetxController {
           .doc(uid)
           .set(userModel.toJson(), SetOptions(merge: true));
     } catch (e) {
-      print('Error saving user to Firestore: $e');
+      debugPrint('Error saving user to Firestore: $e');
       // Don't show error to user as auth was successful
     }
   }

@@ -1,10 +1,12 @@
-import 'package:camera/camera.dart' as camera;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:sarkasm/controllers/scan_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_list_handler.dart';
+import 'package:sarkasm/utils/custom_snackbar.dart';
 import 'package:sarkasm/utils/custom_svg.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
 import 'package:sarkasm/views/base/profile_picture.dart';
@@ -19,14 +21,20 @@ class Scan extends StatefulWidget {
 }
 
 class _ScanState extends State<Scan> {
-  final camCtrl = Get.find<ScanController>();
+  final scanCtrl = Get.find<ScanController>();
+  late MobileScannerController mobileScannerController;
+  bool _canVibrate = true;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      camCtrl.prepareCamera();
-    });
+    mobileScannerController = MobileScannerController();
+  }
+
+  @override
+  void dispose() {
+    mobileScannerController.dispose();
+    super.dispose();
   }
 
   @override
@@ -56,31 +64,40 @@ class _ScanState extends State<Scan> {
                   ],
                 ),
               ),
-              GetBuilder<ScanController>(
-                builder: (controller) {
-                  if (controller.cameraError != null) {
-                    return Center(child: Text(controller.cameraError!));
-                  }
+              Stack(
+                children: [
+                  SizedBox(
+                    height: 300,
+                  child: MobileScanner(
+                    controller: mobileScannerController,
+                    onDetect: (capture) {
+                      if (_canVibrate) {
+                        HapticFeedback.mediumImpact();
+                        _canVibrate = false;
 
-                  if (controller.isLoading ||
-                      controller.cameraController == null ||
-                      !controller.cameraController!.value.isInitialized) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                        Future.delayed(const Duration(seconds: 2), () {
+                          if (mounted) {
+                            _canVibrate = true;
+                          }
+                        });
+                      }
 
-                  return Stack(
-                    children: [
-                      camera.CameraPreview(controller.cameraController!),
-                      Positioned(
-                        top: 24,
-                        bottom: 24,
-                        left: 24,
-                        right: 24,
-                        child: CustomSvg(asset: "assets/icons/scan.svg"),
-                      ),
-                    ],
-                  );
-                },
+                      customSnackBar(
+                        capture.barcodes.first.rawValue ??
+                            "Error detecting code",
+                      );
+                      debugPrint(capture.barcodes.first.rawValue);
+                    },
+                  ),
+                  ),
+                  Positioned(
+                    top: 24,
+                    bottom: 24,
+                    left: 24,
+                    right: 24,
+                    child: CustomSvg(asset: "assets/icons/scan.svg"),
+                  ),
+                ],
               ),
               Padding(
                 padding: const EdgeInsets.all(24),

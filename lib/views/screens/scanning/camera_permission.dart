@@ -45,7 +45,7 @@ class CameraPermission extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(24),
               child: CustomButton(
-                onTap: cameraController.getAccess,
+                onTap: () => cameraController.requestCameraPermission(),
                 text: "Enable Camera Access",
               ),
             ),
