@@ -90,7 +90,7 @@ class ProfilePicture extends StatelessWidget {
                     ),
                     child: Center(
                       child: SvgPicture.asset(
-                        AppIcons.bell,
+                        "assets/icons/person.svg",
                         colorFilter: ColorFilter.mode(
                           AppColors.teal[400]!,
                           BlendMode.srcIn,
@@ -103,9 +103,7 @@ class ProfilePicture extends StatelessWidget {
             Positioned(
               right: 3,
               bottom: 3,
-              child: Center(
-                child: CustomSvg(asset: AppIcons.edit, size: 32),
-              ),
+              child: Center(child: CustomSvg(asset: AppIcons.edit, size: 32)),
             ),
         ],
       ),

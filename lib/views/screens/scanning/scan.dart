@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:sarkasm/controllers/auth_controller.dart';
 import 'package:sarkasm/controllers/scan_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
@@ -25,7 +26,6 @@ class _ScanState extends State<Scan> {
   final scanCtrl = Get.find<ScanController>();
   late MobileScannerController mobileScannerController;
   bool hasAccess = false;
-  bool _canVibrate = true;
 
   @override
   void initState() {
@@ -68,7 +68,7 @@ class _ScanState extends State<Scan> {
                       },
                       child: AbsorbPointer(
                         child: ProfilePicture(
-                          image: "https://thispersondoesnotexist.com",
+                          image: Get.find<AuthController>().getUser?.imageUrl,
                           size: 40,
                         ),
                       ),
@@ -82,23 +82,17 @@ class _ScanState extends State<Scan> {
                     height: 300,
                     child: MobileScanner(
                       controller: mobileScannerController,
+                      fit: BoxFit.cover,
+                      // tapToFocus: true,
+                      scanWindow: Rect.fromLTWH(
+                        24,
+                        24,
+                        MediaQuery.of(context).size.width - 48,
+                        MediaQuery.of(context).size.width - 48,
+                      ),
                       onDetect: (capture) {
-                        if (_canVibrate) {
-                          HapticFeedback.mediumImpact();
-                          _canVibrate = false;
-
-                          Future.delayed(const Duration(seconds: 2), () {
-                            if (mounted) {
-                              _canVibrate = true;
-                            }
-                          });
-                        }
-
-                        customSnackBar(
-                          capture.barcodes.first.rawValue ??
-                              "Error detecting code",
-                        );
-                        debugPrint(capture.barcodes.first.rawValue);
+                        HapticFeedback.heavyImpact();
+                        debugPrint(capture.barcodes.first.displayValue);
                       },
                     ),
                   ),
@@ -115,12 +109,46 @@ class _ScanState extends State<Scan> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    CustomButton(
-                      onTap: () {
-                        Get.to(() => ScanResult());
-                      },
-                      text: "Tap to scan",
-                      leading: "assets/icons/scan.svg",
+                    Obx(
+                      () => CustomButton(
+                        onTap: () async {
+                          // final capture =
+                          //     await mobileScannerController.barcodes.first;
+                          // final data = capture.barcodes
+                          //     .map(
+                          //       (barcode) =>
+                          //           barcode.rawValue ?? barcode.displayValue,
+                          //     )
+                          //     .whereType<String>()
+                          //     .toList();
+
+                          final data = ['testScan'];
+                          if (data.isEmpty) {
+                            customSnackBar("No barcode found");
+                            return;
+                          }
+
+                          debugPrint(data.toString());
+
+                          final result = await scanCtrl.getScanResult(data);
+
+                          if (result == "success") {
+                            Get.to(
+                              () => ScanResult(
+                                scanResult: Get.find<AuthController>()
+                                    .getUser!
+                                    .recentScans!
+                                    .first,
+                              ),
+                            );
+                          } else {
+                            customSnackBar(result);
+                          }
+                        },
+                        isLoading: scanCtrl.isLoading.value,
+                        text: "Tap to scan",
+                        leading: "assets/icons/scan.svg",
+                      ),
                     ),
                   ],
                 ),
@@ -136,52 +164,56 @@ class _ScanState extends State<Scan> {
                   ),
                 ),
               ),
-              CustomListHandler(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                seperator: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Container(
-                    height: 0.5,
-                    width: double.infinity,
-                    color: AppColors.zinc.shade300,
-                  ),
-                ),
-                children: [
-                  for (int i = 0; i < 3; i++)
-                    GestureDetector(
-                      onTap: () {
-                        Get.to(() => ScanResult());
-                      },
-                      child: Row(
-                        spacing: 8,
-                        children: [
-                          Container(
-                            height: 12,
-                            width: 12,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: spectrumColor(i / 2),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              "Pringles Original",
-                              style: AppTexts.tmdm.copyWith(
-                                color: AppColors.zinc.shade700,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            "2m ago",
-                            style: AppTexts.txsm.copyWith(
-                              color: AppColors.zinc.shade300,
-                            ),
-                          ),
-                        ],
-                      ),
+              Obx(
+                () => CustomListHandler(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  seperator: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Container(
+                      height: 0.5,
+                      width: double.infinity,
+                      color: AppColors.zinc.shade300,
                     ),
-                ],
+                  ),
+                  children: [
+                    if (Get.find<AuthController>().getUser?.recentScans != null)
+                      for (var i
+                          in Get.find<AuthController>().getUser!.recentScans!)
+                        GestureDetector(
+                          onTap: () {
+                            Get.to(() => ScanResult(scanResult: i));
+                          },
+                          child: Row(
+                            spacing: 8,
+                            children: [
+                              Container(
+                                height: 12,
+                                width: 12,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: spectrumColor(i.safety),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  i.name,
+                                  style: AppTexts.tmdm.copyWith(
+                                    color: AppColors.zinc.shade700,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                "2m ago",
+                                style: AppTexts.txsm.copyWith(
+                                  color: AppColors.zinc.shade300,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                  ],
+                ),
               ),
             ],
           ),

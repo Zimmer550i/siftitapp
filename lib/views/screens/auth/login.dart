@@ -18,8 +18,8 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final emailCtrl = TextEditingController();
-  final passCtrl = TextEditingController();
+  final emailCtrl = TextEditingController(text: "wasiul0491@gmail.com");
+  final passCtrl = TextEditingController(text: "wasiul12");
 
   @override
   void dispose() {

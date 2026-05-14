@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:sarkasm/controllers/auth_controller.dart';
+import 'package:sarkasm/utils/custom_snackbar.dart';
 import 'package:sarkasm/views/base/custom_app_bar.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
 import 'package:sarkasm/views/base/custom_text_field.dart';
@@ -14,10 +17,18 @@ class ProfileInformation extends StatefulWidget {
 }
 
 class _ProfileInformationState extends State<ProfileInformation> {
+  final auth = Get.find<AuthController>();
   bool isEditing = false;
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   File? profilePic;
+
+  @override
+  void initState() {
+    super.initState();
+    nameCtrl.text = auth.getUser?.name ?? "";
+    emailCtrl.text = auth.getUser?.email ?? "";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +41,7 @@ class _ProfileInformationState extends State<ProfileInformation> {
             children: [
               const SizedBox(height: 20),
               ProfilePicture(
-                image: "https://thispersondoesnotexist.com",
+                image: auth.getUser?.imageUrl,
                 imageFile: profilePic,
                 isEditable: isEditing,
                 imagePickerCallback: (p0) {
@@ -40,13 +51,35 @@ class _ProfileInformationState extends State<ProfileInformation> {
                 },
               ),
               const SizedBox(height: 16),
-              CustomTextField(title: "Name", hintText: "Enter your name"),
+              CustomTextField(
+                controller: nameCtrl,
+                title: "Name",
+                hintText: "Enter your name",
+              ),
               const SizedBox(height: 20),
               if (!isEditing)
-                CustomTextField(title: "Email", hintText: "Enter your email"),
+                CustomTextField(
+                  controller: emailCtrl,
+                  title: "Email",
+                  hintText: "Enter your email",
+                ),
               Spacer(),
               CustomButton(
-                onTap: () {
+                onTap: () async {
+                  if (isEditing) {
+                    String? imageUrl;
+                    if (profilePic != null) {
+                      try {
+                        imageUrl = await auth.uploadProfileImage(profilePic!);
+                      } catch (e) {
+                        customSnackBar(e.toString());
+                      }
+                    }
+                    await auth.updateUserInfo(
+                      name: nameCtrl.text,
+                      imageUrl: imageUrl,
+                    );
+                  }
                   setState(() {
                     isEditing = !isEditing;
                   });

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -17,16 +19,23 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 class AuthController extends GetxController {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   Future<void>? _googleInit;
 
-  AuthController({FirebaseAuth? auth, FirebaseFirestore? firestore})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _firestore = firestore ?? FirebaseFirestore.instance;
+  AuthController({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance;
 
   String loadingType = "";
   bool isLoading = false;
   bool isSendingVerification = false;
+  final Rxn<UserModel> userModel = Rxn<UserModel>();
+  UserModel? get getUser => userModel.value;
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   bool get isUserLoggedIn => _auth.currentUser != null;
@@ -44,6 +53,8 @@ class AuthController extends GetxController {
     if (user == null) {
       Get.offAll(() => const Onboarding());
       return;
+    } else {
+      userModel.value = await getUserInfo(uid: user.uid);
     }
 
     // If user exists but email is not verified
@@ -90,6 +101,7 @@ class AuthController extends GetxController {
           name: name.trim(),
           email: email.trim(),
         );
+        userModel.value = await getUserInfo(uid: credential.user!.uid);
       }
 
       await credential.user?.sendEmailVerification();
@@ -125,6 +137,7 @@ class AuthController extends GetxController {
         Get.to(() => Verification(email: email.trim()));
         return;
       }
+      userModel.value = await getUserInfo(uid: user.uid);
 
       _openApp();
     });
@@ -156,6 +169,7 @@ class AuthController extends GetxController {
           name: result.user!.displayName ?? 'User',
           email: result.user!.email ?? '',
         );
+        userModel.value = await getUserInfo(uid: result.user!.uid);
       }
 
       _openApp();
@@ -203,6 +217,7 @@ class AuthController extends GetxController {
           name: credential.user!.displayName ?? 'User',
           email: credential.user!.email ?? '',
         );
+        userModel.value = await getUserInfo(uid: credential.user!.uid);
       }
 
       _openApp();
@@ -268,6 +283,7 @@ class AuthController extends GetxController {
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();
+    userModel.value = null;
     Get.offAll(() => const Login());
   }
 
@@ -363,6 +379,102 @@ class AuthController extends GetxController {
     final bytes = utf8.encode(input);
     final digest = sha256.convert(bytes);
     return digest.toString();
+  }
+
+  Future<UserModel?> getUserInfo({String? uid}) async {
+    try {
+      final userId = uid ?? _auth.currentUser?.uid;
+      if (userId == null || userId.isEmpty) return null;
+
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      final data = userDoc.data();
+      if (!userDoc.exists || data == null) return null;
+
+      final user = UserModel.fromJson(data);
+      if (userId == _auth.currentUser?.uid) {
+        userModel.value = user;
+      }
+      return user;
+    } catch (e) {
+      debugPrint('Error getting user info from Firestore: $e');
+      return null;
+    }
+  }
+
+  Future<void> updateUserInfo({String? name, String? imageUrl}) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      customSnackBar('No signed-in user found.');
+      return;
+    }
+
+    final trimmedName = name?.trim();
+    final trimmedImageUrl = imageUrl?.trim();
+
+    if (trimmedName != null && trimmedName.isEmpty) {
+      customSnackBar('Please enter your name.');
+      return;
+    }
+
+    if ((trimmedName == null || trimmedName.isEmpty) &&
+        (trimmedImageUrl == null || trimmedImageUrl.isEmpty)) {
+      customSnackBar('Nothing to update.');
+      return;
+    }
+
+    await _runAuthAction(() async {
+      final updateData = <String, dynamic>{'updatedAt': DateTime.now()};
+
+      if (trimmedName != null && trimmedName.isNotEmpty) {
+        updateData['name'] = trimmedName;
+        await currentUser.updateDisplayName(trimmedName);
+      }
+
+      if (trimmedImageUrl != null && trimmedImageUrl.isNotEmpty) {
+        updateData['imageUrl'] = trimmedImageUrl;
+        await currentUser.updatePhotoURL(trimmedImageUrl);
+      }
+
+      await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .set(updateData, SetOptions(merge: true));
+
+      await currentUser.reload();
+      userModel.value = await getUserInfo(uid: currentUser.uid);
+      customSnackBar('Profile updated successfully.', isError: false);
+    });
+  }
+
+  Future<String?> uploadProfileImage(File imageFile) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      customSnackBar('No signed-in user found.');
+      return null;
+    }
+
+    try {
+      final fileExtension = imageFile.path.split('.').last.toLowerCase();
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+      final storageRef = _storage
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('profile')
+          .child(fileName);
+
+      final uploadTask = await storageRef.putFile(imageFile);
+      return await uploadTask.ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      debugPrint('Firebase Storage upload error: ${e.code} - ${e.message}');
+      customSnackBar('Failed to upload profile image.');
+      return null;
+    } catch (e) {
+      debugPrint('Profile image upload error: $e');
+      customSnackBar('Failed to upload profile image.');
+      return null;
+    }
   }
 
   Future<void> _saveUserToFirestore({
