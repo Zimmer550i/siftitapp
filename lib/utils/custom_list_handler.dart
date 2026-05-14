@@ -64,7 +64,7 @@ class CustomListHandler extends StatelessWidget {
         return false;
       },
       child: isLoading
-          ? Center(child: CustomLoading())
+          ? Center(child: CustomLoading(color: AppColors.teal))
           : reverse
           ? getChild() ?? getChildren()
           : RefreshIndicator(
@@ -111,7 +111,7 @@ class CustomListHandler extends StatelessWidget {
             );
           }
           if (isLoadingMore) {
-            return Center(child: CustomLoading());
+            return Center(child: CustomLoading(color: AppColors.teal));
           }
           return Center(
             child: Padding(

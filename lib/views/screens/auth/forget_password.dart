@@ -92,7 +92,7 @@ class _ForgetPasswordState extends State<ForgetPassword> {
                   return CustomButton(
                     onTap: onSubmit,
                     text: "Send reset link",
-                    isLoading: authController.isLoading,
+                    isLoading: authController.isLoading.value,
                   );
                 },
               ),

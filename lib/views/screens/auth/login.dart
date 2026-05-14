@@ -86,7 +86,7 @@ class _LoginState extends State<Login> {
                   return CustomButton(
                     onTap: onSubmit,
                     text: "Login",
-                    isLoading: authController.isLoading,
+                    isLoading: authController.isLoading.value,
                   );
                 },
               ),

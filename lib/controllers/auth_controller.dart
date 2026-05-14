@@ -32,7 +32,7 @@ class AuthController extends GetxController {
        _storage = storage ?? FirebaseStorage.instance;
 
   String loadingType = "";
-  bool isLoading = false;
+  RxBool isLoading = RxBool(false);
   bool isSendingVerification = false;
   final Rxn<UserModel> userModel = Rxn<UserModel>();
   UserModel? get getUser => userModel.value;
@@ -308,7 +308,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> _runAuthAction(Future<void> Function() action) async {
-    isLoading = true;
+    isLoading(true);
     update();
     try {
       await action();
@@ -328,7 +328,7 @@ class AuthController extends GetxController {
     } catch (e) {
       customSnackBar('Something went wrong. Please try again.');
     } finally {
-      isLoading = false;
+      isLoading(false);
       update();
     }
   }

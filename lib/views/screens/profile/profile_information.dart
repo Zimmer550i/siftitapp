@@ -54,6 +54,7 @@ class _ProfileInformationState extends State<ProfileInformation> {
               CustomTextField(
                 controller: nameCtrl,
                 title: "Name",
+                isDisabled: !isEditing,
                 hintText: "Enter your name",
               ),
               const SizedBox(height: 20),
@@ -61,30 +62,34 @@ class _ProfileInformationState extends State<ProfileInformation> {
                 CustomTextField(
                   controller: emailCtrl,
                   title: "Email",
+                  isDisabled: !isEditing,
                   hintText: "Enter your email",
                 ),
               Spacer(),
-              CustomButton(
-                onTap: () async {
-                  if (isEditing) {
-                    String? imageUrl;
-                    if (profilePic != null) {
-                      try {
-                        imageUrl = await auth.uploadProfileImage(profilePic!);
-                      } catch (e) {
-                        customSnackBar(e.toString());
+              Obx(
+                () => CustomButton(
+                  onTap: () async {
+                    if (isEditing) {
+                      String? imageUrl;
+                      if (profilePic != null) {
+                        try {
+                          imageUrl = await auth.uploadProfileImage(profilePic!);
+                        } catch (e) {
+                          customSnackBar(e.toString());
+                        }
                       }
+                      await auth.updateUserInfo(
+                        name: nameCtrl.text,
+                        imageUrl: imageUrl,
+                      );
                     }
-                    await auth.updateUserInfo(
-                      name: nameCtrl.text,
-                      imageUrl: imageUrl,
-                    );
-                  }
-                  setState(() {
-                    isEditing = !isEditing;
-                  });
-                },
-                text: isEditing ? "Update Profile" : "Edit Profile",
+                    setState(() {
+                      isEditing = !isEditing;
+                    });
+                  },
+                  isLoading: auth.isLoading.value,
+                  text: isEditing ? "Update Profile" : "Edit Profile",
+                ),
               ),
               const SizedBox(height: 20),
             ],

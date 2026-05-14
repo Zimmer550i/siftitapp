@@ -99,7 +99,7 @@ class _SignupState extends State<Signup> {
                   return CustomButton(
                     onTap: onSubmit,
                     text: "Register",
-                    isLoading: authController.isLoading,
+                    isLoading: authController.isLoading.value,
                   );
                 },
               ),

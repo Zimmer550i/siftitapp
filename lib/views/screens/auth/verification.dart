@@ -148,7 +148,7 @@ class _VerificationState extends State<Verification> {
                   return CustomButton(
                     onTap: onSubmit,
                     text: "I've Verified",
-                    isLoading: authController.isLoading,
+                    isLoading: authController.isLoading.value,
                   );
                 },
               ),

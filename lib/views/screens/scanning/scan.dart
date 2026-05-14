@@ -30,6 +30,11 @@ class _ScanState extends State<Scan> {
   @override
   void initState() {
     super.initState();
+    if (Get.find<AuthController>().getUser == null) {
+      Get.find<AuthController>().getUserInfo().then(
+        (val) => Get.find<AuthController>().userModel.value = val,
+      );
+    }
     checkAccess();
     mobileScannerController = MobileScannerController();
   }
