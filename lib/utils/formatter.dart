@@ -106,18 +106,21 @@ class Formatter {
       rtn += duration.inDays.toString();
       rtn += "d ";
       duration -= Duration(days: duration.inDays);
+      return rtn.trim();
     }
 
     if (duration.inHours != 0) {
       rtn += duration.inHours.toString();
       rtn += "h ";
       duration -= Duration(hours: duration.inHours);
+      return rtn.trim();
     }
 
     if (duration.inMinutes >= 0) {
       rtn += duration.inMinutes.toString();
       rtn += "m";
       duration -= Duration(hours: duration.inMinutes);
+      return rtn.trim();
     }
 
     if (showSeconds) {

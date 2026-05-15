@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:sarkasm/controllers/auth_controller.dart';
@@ -9,6 +10,7 @@ import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_list_handler.dart';
 import 'package:sarkasm/utils/custom_snackbar.dart';
 import 'package:sarkasm/utils/custom_svg.dart';
+import 'package:sarkasm/utils/formatter.dart';
 import 'package:sarkasm/views/base/custom_button.dart';
 import 'package:sarkasm/views/base/profile_picture.dart';
 import 'package:sarkasm/views/screens/profile/profile.dart';
@@ -26,6 +28,8 @@ class _ScanState extends State<Scan> {
   final scanCtrl = Get.find<ScanController>();
   late MobileScannerController mobileScannerController;
   bool hasAccess = false;
+  BarcodeCapture? latestCapture;
+  Timer? _latestCaptureResetTimer;
 
   @override
   void initState() {
@@ -41,21 +45,27 @@ class _ScanState extends State<Scan> {
 
   @override
   void dispose() {
+    _latestCaptureResetTimer?.cancel();
     mobileScannerController.dispose();
     super.dispose();
   }
 
   void checkAccess() async {
-    hasAccess = await scanCtrl.hasAccess();
+    final access = await scanCtrl.hasAccess();
 
-    if (!hasAccess) {
+    if (!mounted) return;
+
+    setState(() {
+      hasAccess = access;
+    });
+
+    if (!access) {
       Get.to(() => CameraPermission());
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    checkAccess();
     return Scaffold(
       body: SingleChildScrollView(
         child: SafeArea(
@@ -88,17 +98,14 @@ class _ScanState extends State<Scan> {
                     child: MobileScanner(
                       controller: mobileScannerController,
                       fit: BoxFit.cover,
-                      // tapToFocus: true,
+                      tapToFocus: true,
                       scanWindow: Rect.fromLTWH(
                         24,
                         24,
                         MediaQuery.of(context).size.width - 48,
                         MediaQuery.of(context).size.width - 48,
                       ),
-                      onDetect: (capture) {
-                        HapticFeedback.heavyImpact();
-                        debugPrint(capture.barcodes.first.displayValue);
-                      },
+                      onDetect: onDetect,
                     ),
                   ),
                   Positioned(
@@ -110,47 +117,49 @@ class _ScanState extends State<Scan> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              if (latestCapture != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: 24,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Detected: ",
+                          style: AppTexts.tsms.copyWith(color: AppColors.zinc),
+                        ),
+                        Column(
+                          children: [
+                            for (var i in latestCapture!.barcodes)
+                              Text(
+                                i.displayValue.toString(),
+                                style: AppTexts.tsmr.copyWith(
+                                  color: AppColors.zinc,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 child: Column(
                   children: [
                     Obx(
                       () => CustomButton(
-                        onTap: () async {
-                          // final capture =
-                          //     await mobileScannerController.barcodes.first;
-                          // final data = capture.barcodes
-                          //     .map(
-                          //       (barcode) =>
-                          //           barcode.rawValue ?? barcode.displayValue,
-                          //     )
-                          //     .whereType<String>()
-                          //     .toList();
-
-                          final data = ['testScan'];
-                          if (data.isEmpty) {
-                            customSnackBar("No barcode found");
-                            return;
-                          }
-
-                          debugPrint(data.toString());
-
-                          final result = await scanCtrl.getScanResult(data);
-
-                          if (result == "success") {
-                            Get.to(
-                              () => ScanResult(
-                                scanResult: Get.find<AuthController>()
-                                    .getUser!
-                                    .recentScans!
-                                    .first,
-                              ),
-                            );
-                          } else {
-                            customSnackBar(result);
-                          }
-                        },
+                        onTap: onScan,
                         isLoading: scanCtrl.isLoading.value,
+                        isDisabled: latestCapture?.barcodes.isEmpty ?? false,
                         text: "Tap to scan",
                         leading: "assets/icons/scan.svg",
                       ),
@@ -182,9 +191,16 @@ class _ScanState extends State<Scan> {
                     ),
                   ),
                   children: [
-                    if (Get.find<AuthController>().getUser?.recentScans != null)
+                    if (Get.find<AuthController>()
+                            .userModel
+                            .value
+                            ?.recentScans !=
+                        null)
                       for (var i
-                          in Get.find<AuthController>().getUser!.recentScans!)
+                          in Get.find<AuthController>()
+                              .userModel
+                              .value!
+                              .recentScans!)
                         GestureDetector(
                           onTap: () {
                             Get.to(() => ScanResult(scanResult: i));
@@ -209,7 +225,7 @@ class _ScanState extends State<Scan> {
                                 ),
                               ),
                               Text(
-                                "2m ago",
+                                "${Formatter.durationFormatter(DateTime.now().difference(i.createdAt))} ago",
                                 style: AppTexts.txsm.copyWith(
                                   color: AppColors.zinc.shade300,
                                 ),
@@ -225,5 +241,59 @@ class _ScanState extends State<Scan> {
         ),
       ),
     );
+  }
+
+  Future<void> onScan() async {
+    final capture = latestCapture;
+
+    if (capture == null || capture.barcodes.isEmpty) {
+      customSnackBar("No barcode found");
+      return;
+    }
+
+    final data = capture.barcodes
+        .map((barcode) => barcode.rawValue ?? barcode.displayValue)
+        .whereType<String>()
+        .toList();
+
+    if (data.isEmpty) {
+      customSnackBar("No barcode found");
+      return;
+    }
+
+    debugPrint(data.toString());
+
+    final result = await scanCtrl.getScanResult(data);
+
+    if (result == "success") {
+      Get.to(
+        () => ScanResult(
+          scanResult: Get.find<AuthController>().getUser!.recentScans!.first,
+        ),
+      );
+    } else {
+      customSnackBar(result);
+    }
+  }
+
+  void onDetect(BarcodeCapture capture) {
+    debugPrint(
+      "Detected: ${capture.barcodes.map((val) => val.displayValue).join(", ")}",
+    );
+
+    if (capture.barcodes.isNotEmpty) {
+      _latestCaptureResetTimer?.cancel();
+      setState(() => latestCapture = capture);
+      HapticFeedback.vibrate();
+
+      _latestCaptureResetTimer = Timer(const Duration(seconds: 1), () {
+        if (!mounted) return;
+        HapticFeedback.vibrate();
+        setState(() => latestCapture = null);
+      });
+    } else {
+      _latestCaptureResetTimer?.cancel();
+      setState(() => latestCapture = null);
+    }
   }
 }

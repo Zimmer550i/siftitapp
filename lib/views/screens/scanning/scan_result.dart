@@ -9,6 +9,27 @@ class ScanResult extends StatelessWidget {
   final ScanModel scanResult;
   const ScanResult({super.key, required this.scanResult});
 
+  int get rating => (scanResult.safety * 100).toInt();
+
+  int get highAdditivesCount => scanResult.ingrediants
+      .where((ingredient) => ingredient.impact == Impact.high)
+      .length;
+
+  String getRatingLabel(int rating) {
+    if (rating >= 90) return "Good";
+    if (rating >= 80) return "Decent";
+    if (rating >= 70) return "Bad";
+    if (rating >= 50) return "Very Bad";
+    return "Warning";
+  }
+
+  String getConcernLevel(int flaggedCount) {
+    if (flaggedCount == 0) return "No";
+    if (flaggedCount <= 2) return "Little";
+    if (flaggedCount <= 4) return "Moderate";
+    return "Massive";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,7 +49,7 @@ class ScanResult extends StatelessWidget {
                       alignment: Alignment.center,
                       children: [
                         Text(
-                          (scanResult.safety * 100).toInt().toString(),
+                          rating.toString(),
                           style: AppTexts.dxsm.copyWith(
                             color: AppColors.zinc.shade900,
                           ),
@@ -53,13 +74,13 @@ class ScanResult extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "C+",
+                            getRatingLabel(rating),
                             style: AppTexts.dxsm.copyWith(
                               color: spectrumColor(scanResult.safety),
                             ),
                           ),
                           Text(
-                            "Moderate concerns detected in ingredients",
+                            "${getConcernLevel(highAdditivesCount)} concerns detected in ingredients",
                             style: AppTexts.tsmr.copyWith(
                               color: AppColors.zinc,
                             ),
@@ -74,7 +95,7 @@ class ScanResult extends StatelessWidget {
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
-                              "3 additives flagged",
+                              "$highAdditivesCount additives flagged",
                               style: AppTexts.tsmr.copyWith(
                                 color: AppColors.bad,
                               ),

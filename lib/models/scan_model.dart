@@ -104,13 +104,10 @@ class IngrediantModel {
   }
 }
 
-enum Impact {
-  high,
-  med,
-  low,
-}
+enum Impact { high, med, low }
 
 Impact impactFromString(String value) {
+  value = value.toLowerCase();
   switch (value.toLowerCase()) {
     case 'high':
       return Impact.high;
@@ -152,7 +149,8 @@ DateTime _dateTimeFromJson(dynamic value) {
   final dynamic nanoseconds = value.nanoseconds;
 
   if (seconds is int) {
-    final milliseconds = seconds * 1000 + ((nanoseconds is int ? nanoseconds : 0) ~/ 1000000);
+    final milliseconds =
+        seconds * 1000 + ((nanoseconds is int ? nanoseconds : 0) ~/ 1000000);
     return DateTime.fromMillisecondsSinceEpoch(milliseconds);
   }
 

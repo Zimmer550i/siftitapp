@@ -79,7 +79,7 @@ class ScanController extends GetxController {
       }
 
       currentUser.recentScans ??= [];
-      currentUser.recentScans!.insert(0, newData);
+      currentUser.recentScans!.insert(0, newData.copyWith(createdAt: DateTime.now()));
 
       if (currentUser.recentScans!.length > 3) {
         currentUser.recentScans!.removeLast();
@@ -100,9 +100,9 @@ class ScanController extends GetxController {
             .doc(userId)
             .collection("items")
             .add({
-          ...newData.toJson(),
-          "createdAt": FieldValue.serverTimestamp(),
-        });
+              ...newData.toJson(),
+              "createdAt": FieldValue.serverTimestamp(),
+            });
       }
 
       return "success";

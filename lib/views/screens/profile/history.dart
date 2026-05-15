@@ -4,6 +4,7 @@ import 'package:sarkasm/controllers/scan_controller.dart';
 import 'package:sarkasm/utils/app_colors.dart';
 import 'package:sarkasm/utils/app_texts.dart';
 import 'package:sarkasm/utils/custom_list_handler.dart';
+import 'package:sarkasm/utils/formatter.dart';
 import 'package:sarkasm/views/base/custom_app_bar.dart';
 import 'package:sarkasm/views/screens/scanning/scan_result.dart';
 
@@ -62,7 +63,7 @@ class History extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      "2m ago",
+                      "${Formatter.durationFormatter(DateTime.now().difference(i.createdAt))} ago",
                       style: AppTexts.txsm.copyWith(
                         color: AppColors.zinc.shade300,
                       ),
